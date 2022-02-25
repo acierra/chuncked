@@ -1,12 +1,16 @@
- #include <string.h>
- #include <stdio.h>
- #include <ctype.h>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iterator>
  
  int htoi(unsigned char *s) 
 { 
     int i;
     int n = 0; 
-    if (s[0] == '0' && (s[1]=='x' || s[1]=='X')) //Determine whether there is a leading 0x or 0X
+    if (s[0] == '0' && (s[1]=='x' || s[1]=='X')) 
     { 
         i = 2; 
     } 
@@ -28,7 +32,7 @@
     return n; 
 } 
 
-int _find_key(unsigned char *data,int data_length,unsigned char *key,int key_length,int *position)
+int find_key(std::string *data,int data_length,unsigned char *key,int key_length,int *position)
 {
     int i = *position;
     if(key == NULL || i<0)
@@ -46,45 +50,48 @@ int _find_key(unsigned char *data,int data_length,unsigned char *key,int key_len
     return 0;
 }
 
-int de_chunked(unsigned char *data,int data_length,unsigned char *dest,int *dest_length)
+int de_chunked(std::string *data, int data_length)
 {
-    char       chunked_hex[CHUNKED_MAX_LEN + 1];    //  Hexadecimal block length
-    int        chunked_len;                        //  Block length
+    int        chunked_len;                        
     int        ret;
     int        begin = 0;
     int        end = 0;
     int        i = 0;
     int        index = 0;
 
-    ret = _find_key(data, data_length, " 0\r\n\r\n", 5, &end);
-    if (ret == 0)    //Incomplete information
+    ret = find_key(data, data_length, " 0\r\n\r\n", 5, &end);
+    if (ret == 0)    
         return 0;
 
     ret = _find_key(data, data_length, "\r\n\r\n", 4, &begin);
-    begin = begin + 4;    //Move to the beginning of the data
+    begin = begin + 4;  
 
     while(memcmp(data+begin,"0\r\n\r\n",5) != 0)
     {
-        //Get the current block length
-        ret = _find_key(data+begin,CHUNKED_MAX_LEN,"\r\n",2,&i);
-        if (ret == 0)    //Incomplete information
+
+        ret = find_key(data+begin, data_lenght, "\r\n",2,&i);
+        if (ret == 0)
            return 0;
-        memcpy(chunked_hex,data+begin,i);
-        chunked_hex[i] = '\0';
-        chunked_len = htoi(chunked_hex);
-//Move to the current block data segment
-        begin = begin + i + 2;
-//Get current block data
-        if (memcmp(data+begin+chunked_len,"\r\n",2) != 0)
-            return 0;    //The information is wrong
-        memcpy(dest+index,data+begin,chunked_len);
-        index = index + chunked_len;
-//Move to the next block length
-        begin = begin + chunked_len + 2;
-        i = begin;
-        if(begin > end)    //Structural error
-            return -1;
-    }
-    *dest_length = index;
+        
+        
     return 1;
+}
+
+
+
+std::string chuncked(std::string str)
+{
+    int len;
+
+    len = str.length();
+    de_chuncked(&str, len);
+    return (str);
+}
+
+int main()
+{
+    std::string http_chunk_header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nchunk 2\r\n0\r\n";
+    chunked(http_chunk_header);
+    std::cout << http_chunk_header;
+    return (0);
 }
